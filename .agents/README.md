@@ -43,6 +43,37 @@ Server health does not prove plugin loading. Inspect `/experimental/tool/ids` an
 session prompts is a separate integration check. Unit tests mock embeddings, so
 the offline check above is necessary to verify real inference and cache reuse.
 
+## Free live-model checks
+
+On September 13, 2026, Zen's `opencode/big-pickle` completed a keyless session
+through OpenCode 1.18.30 with zero reported cost. The session retrieved a marker
+provided only through the memory system hook, executed `memory_set`, `journal_write`,
+`journal_search`, and `journal_read`, and produced a real embedding sidecar with
+matching model/provider/session metadata.
+
+For a similar manual check, verify current availability and pricing in
+[Zen's documentation](https://opencode.ai/docs/zen/) first. Free offerings can
+change and may retain data for model improvement. Use only synthetic fixtures.
+Add the following to the isolated runtime's `home/.config/opencode/opencode.json`
+(merge with existing configuration rather than overwriting it), then restart:
+
+```json
+{
+  "enabled_providers": ["opencode"],
+  "model": "opencode/big-pickle",
+  "small_model": "opencode/big-pickle",
+  "provider": {"opencode": {"whitelist": ["big-pickle"]}},
+  "permission": {"*": "deny", "memory_*": "allow", "journal_*": "allow"}
+}
+```
+
+Setting both models avoids a paid title-generation model. Keep other tools denied
+and inspect the session's completed tool calls, files, embeddings, and cost fields;
+the model's claim of success is not verification. Remove test configuration after
+the check. OpenRouter also offers free models, but its API requires an API key.
+Live-provider checks remain manual, never part of setup/resume: availability,
+rate limits, and model behavior should not prevent creation of an orb snapshot.
+
 V2 is not installed or supported by this setup. Its plugin API requires a separate
 compatibility effort. If comparing V2 later, pin the intended distribution in a
 separate prefix with its own runtime HOME/project: current V2 distributions may
