@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Toolchains and dependencies persist in the snapshot. No services or auth to repair.
+# Dependencies and public model assets persist. The launcher creates runtime state
+# on demand; Amp supervises the service. Never install or authenticate here.

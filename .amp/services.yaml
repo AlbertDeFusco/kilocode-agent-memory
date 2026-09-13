@@ -1,0 +1,5 @@
+services:
+  opencode:
+    command: .agents/opencode serve --hostname 127.0.0.1 --port "$PORT"
+    port: 4096
+    health: /global/health

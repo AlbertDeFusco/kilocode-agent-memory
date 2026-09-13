@@ -7,3 +7,14 @@ cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
 printf 'Using Bun %s\n' "$(bun --version)"
 printf 'Installing dependencies from bun.lock\n'
 time bun install --frozen-lockfile
+
+# Keep the development CLI separate from the published plugin and global binaries.
+opencode_version=1.18.30
+if [[ ! -x .amp/tooling/node_modules/.bin/opencode ]] ||
+  [[ "$(.amp/tooling/node_modules/.bin/opencode --version)" != "$opencode_version" ]]; then
+  printf 'Installing OpenCode %s\n' "$opencode_version"
+  time npm install --prefix .amp/tooling --no-save --package-lock=false "opencode-ai@$opencode_version"
+fi
+
+printf 'Warming and verifying the public embedding model cache\n'
+time bun .agents/check-embeddings.ts
