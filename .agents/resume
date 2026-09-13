@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# Toolchains and dependencies persist in the snapshot. No services or auth to repair.

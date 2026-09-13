@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.."
+
+# Bun is provided by the Amp orb base image; this repo has no exact version pin.
+printf 'Using Bun %s\n' "$(bun --version)"
+printf 'Installing dependencies from bun.lock\n'
+time bun install --frozen-lockfile
