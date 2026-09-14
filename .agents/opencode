@@ -20,4 +20,4 @@ fi
 
 # Keep project memory in the fixture too, not in the source checkout.
 cd -- "$runtime/project"
-exec "$repo_root/.amp/tooling/node_modules/.bin/opencode" "$@"
+exec "$repo_root/node_modules/.bin/opencode" "$@"
