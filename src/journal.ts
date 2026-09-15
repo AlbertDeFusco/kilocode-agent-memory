@@ -14,10 +14,17 @@ const TagSchema = z.looseObject({
 });
 
 const ConfigSchema = z.looseObject({
+  // Invalid opt-in journal settings must not discard memory isolation.
   journal: z
     .looseObject({
       enabled: z.boolean().optional(),
       tags: z.array(TagSchema).optional(),
+    })
+    .optional()
+    .catch(undefined),
+  memory: z
+    .looseObject({
+      disable_global: z.boolean().optional(),
     })
     .optional(),
 });
@@ -26,17 +33,30 @@ export type AgentMemoryConfig = z.infer<typeof ConfigSchema>;
 
 export async function loadConfig(
   configDir?: string,
+  warn?: (message: string) => void,
 ): Promise<AgentMemoryConfig> {
   const dir = configDir ?? path.join(os.homedir(), ".config", "opencode");
   const configPath = path.join(dir, "agent-memory.json");
+  let config: unknown;
   try {
     const raw = await fs.readFile(configPath, "utf-8");
-    const parsed = ConfigSchema.safeParse(JSON.parse(raw));
-    if (!parsed.success) return {};
-    return parsed.data;
-  } catch {
+    config = z.looseObject({}).parse(JSON.parse(raw));
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code !== "ENOENT") {
+      warn?.(`Ignoring unreadable or invalid config at ${configPath}; using defaults with global memory enabled.`);
+    }
     return {};
   }
+
+  // Keep memory validation outside the legacy file/object fallback above.
+  const parsed = ConfigSchema.safeParse(config);
+  if (!parsed.success) {
+    throw new Error(
+      `Invalid memory settings in ${configPath}: ${parsed.error.message}`,
+      { cause: parsed.error },
+    );
+  }
+  return parsed.data;
 }
 
 export type JournalTag = {

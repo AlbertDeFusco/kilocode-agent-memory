@@ -37,8 +37,10 @@ async function mkTmpDir(): Promise<string> {
 describe("loadConfig", () => {
   test("returns empty config when file does not exist", async () => {
     const dir = await mkTmpDir();
-    const config = await loadConfig(dir);
+    const warn = mock(() => {});
+    const config = await loadConfig(dir, warn);
     expect(config).toEqual({});
+    expect(warn).not.toHaveBeenCalled();
   });
 
   test("returns parsed config when file is valid", async () => {
@@ -51,11 +53,66 @@ describe("loadConfig", () => {
     expect(config.journal?.enabled).toBe(true);
   });
 
-  test("returns empty config when file has invalid JSON", async () => {
+  test.each([
+    "not json{{{",
+    '{"memory": {"disable_global": true}',
+    "null",
+    "[]",
+    '"not an object"',
+  ])("warns and uses defaults for malformed or non-object config: %s", async (raw) => {
     const dir = await mkTmpDir();
-    await fs.writeFile(path.join(dir, "agent-memory.json"), "not json{{{");
-    const config = await loadConfig(dir);
-    expect(config).toEqual({});
+    try {
+      await fs.writeFile(path.join(dir, "agent-memory.json"), raw);
+      const warn = mock(() => {});
+      expect(await loadConfig(dir, warn)).toEqual({});
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("global memory enabled"));
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  test.each([
+    '{"memory": null}',
+    '{"memory": {"disable_global": "true"}}',
+    '{"journal": {"enabled": "yes"}, "memory": {"disable_global": "true"}}',
+  ])("rejects invalid memory settings in a JSON object: %s", async (raw) => {
+    const dir = await mkTmpDir();
+    try {
+      await fs.writeFile(path.join(dir, "agent-memory.json"), raw);
+      await expect(loadConfig(dir)).rejects.toThrow("agent-memory.json");
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  test("warns and uses defaults for unreadable config", async () => {
+    const dir = await mkTmpDir();
+    try {
+      await fs.mkdir(path.join(dir, "agent-memory.json"));
+      const warn = mock(() => {});
+      expect(await loadConfig(dir, warn)).toEqual({});
+      expect(warn).toHaveBeenCalledWith(expect.stringContaining("global memory enabled"));
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  test.each([
+    { enabled: "yes" },
+    { enabled: true, tags: [{ name: "perf" }] },
+  ])("preserves memory isolation when journal config is invalid: %j", async (journal) => {
+    const dir = await mkTmpDir();
+    try {
+      await fs.writeFile(
+        path.join(dir, "agent-memory.json"),
+        JSON.stringify({ memory: { disable_global: true }, journal }),
+      );
+      const config = await loadConfig(dir);
+      expect(config.memory?.disable_global).toBe(true);
+      expect(config.journal).toBeUndefined();
+    } finally {
+      await fs.rm(dir, { recursive: true, force: true });
+    }
   });
 
   test("returns custom tags from config", async () => {

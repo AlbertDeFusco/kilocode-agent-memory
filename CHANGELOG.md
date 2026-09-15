@@ -18,6 +18,15 @@ and this project attempts to adhere to [Semantic Versioning](https://semver.org/
 
 ## [Unreleased]
 
+### Added
+
+- Optional `memory.disable_global` setting for project-only memory blocks, tools, and system instructions; existing global files are preserved for re-enabling
+
+### Changed
+
+- Invalid memory settings in a valid JSON object report an initialization error; invalid journal settings no longer discard valid memory settings
+- Unreadable, malformed, or non-object configuration retains the default-settings fallback (global memory enabled), now with a warning in OpenCode's logs
+
 ## [0.2.0]
 
 ### Added

@@ -3,11 +3,20 @@ import { tool } from "@opencode-ai/plugin";
 import type { JournalStore } from "./journal";
 import type { MemoryScope, MemoryStore } from "./memory";
 
-export function MemoryList(store: MemoryStore) {
+export type MemoryToolOptions = {
+  disableGlobal?: boolean;
+};
+
+export function MemoryList(store: MemoryStore, opts?: MemoryToolOptions) {
+  const disableGlobal = opts?.disableGlobal === true;
+  const scopeValues = disableGlobal
+    ? (["all", "project"] as const)
+    : (["all", "global", "project"] as const);
+
   return tool({
     description: "List available memory blocks (labels, descriptions, sizes).",
     args: {
-      scope: tool.schema.enum(["all", "global", "project"]).optional(),
+      scope: tool.schema.enum(scopeValues).optional(),
     },
     async execute(args) {
       // Default to "all" for list (show everything)
@@ -27,12 +36,17 @@ export function MemoryList(store: MemoryStore) {
   });
 }
 
-export function MemorySet(store: MemoryStore) {
+export function MemorySet(store: MemoryStore, opts?: MemoryToolOptions) {
+  const disableGlobal = opts?.disableGlobal === true;
+  const scopeValues = disableGlobal
+    ? (["project"] as const)
+    : (["global", "project"] as const);
+
   return tool({
     description: "Create or update a memory block (full overwrite).",
     args: {
       label: tool.schema.string(),
-      scope: tool.schema.enum(["global", "project"]).optional(),
+      scope: tool.schema.enum(scopeValues).optional(),
       value: tool.schema.string(),
       description: tool.schema.string().optional(),
       limit: tool.schema.number().int().positive().optional(),
@@ -49,12 +63,17 @@ export function MemorySet(store: MemoryStore) {
   });
 }
 
-export function MemoryReplace(store: MemoryStore) {
+export function MemoryReplace(store: MemoryStore, opts?: MemoryToolOptions) {
+  const disableGlobal = opts?.disableGlobal === true;
+  const scopeValues = disableGlobal
+    ? (["project"] as const)
+    : (["global", "project"] as const);
+
   return tool({
     description: "Replace a substring within a memory block.",
     args: {
       label: tool.schema.string(),
-      scope: tool.schema.enum(["global", "project"]).optional(),
+      scope: tool.schema.enum(scopeValues).optional(),
       oldText: tool.schema.string(),
       newText: tool.schema.string(),
     },

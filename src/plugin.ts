@@ -17,12 +17,18 @@ import {
 } from "./tools";
 import type { JournalContext } from "./tools";
 
-export const MemoryPlugin: Plugin = async ({ directory }) => {
-  const store = createMemoryStore(directory);
+export const MemoryPlugin: Plugin = async ({ directory, client }) => {
+  const config = await loadConfig(undefined, (message) => {
+    void client.app.log({
+      body: { service: "agent-memory", level: "warn", message },
+    }).catch(() => {});
+  });
+  const disableGlobal = config.memory?.disable_global === true;
+
+  const store = createMemoryStore(directory, { disableGlobal });
   await store.ensureSeed();
 
   // Journal: opt-in via ~/.config/opencode/agent-memory.json
-  const config = await loadConfig();
   const journalEnabled = config.journal?.enabled === true;
 
   // Mutable state updated by chat.message hook
@@ -55,7 +61,7 @@ export const MemoryPlugin: Plugin = async ({ directory }) => {
 
     "experimental.chat.system.transform": async (_input, output) => {
       const blocks = await store.listBlocks("all");
-      const xml = renderMemoryBlocks(blocks);
+      const xml = renderMemoryBlocks(blocks, { disableGlobal });
       if (!xml) return;
 
       // Insert early (right after provider header) for salience.
@@ -70,9 +76,9 @@ export const MemoryPlugin: Plugin = async ({ directory }) => {
     },
 
     tool: {
-      memory_list: MemoryList(store),
-      memory_set: MemorySet(store),
-      memory_replace: MemoryReplace(store),
+      memory_list: MemoryList(store, { disableGlobal }),
+      memory_set: MemorySet(store, { disableGlobal }),
+      memory_replace: MemoryReplace(store, { disableGlobal }),
       ...journalTools,
     },
   };
