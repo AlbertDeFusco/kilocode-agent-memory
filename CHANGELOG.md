@@ -18,6 +18,14 @@ and this project attempts to adhere to [Semantic Versioning](https://semver.org/
 
 ## [Unreleased]
 
+### Added
+
+- Compaction-aware memory via `experimental.session.compacting` hook; reminds the compactor that memory blocks are persistent so it avoids redundantly summarizing their contents
+- Structured tool metadata via `ToolContext.metadata()` on all memory and journal tools for richer UI output
+- Inline plugin configuration via `PluginOptions` in `kilo.json`; no separate `agent-memory.json` file needed
+- Journal entries now capture `variant` (reasoning variant) and `sessionID` from the Kilo plugin API
+- Worktree-aware project memory; uses `PluginInput.worktree` so Agent Manager worktree sessions share project memory with the main repo
+
 ### Changed
 
 - Forked from [opencode-agent-memory](https://github.com/joshuadavidthomas/opencode-agent-memory) and adapted for [Kilo](https://kilo.ai)
