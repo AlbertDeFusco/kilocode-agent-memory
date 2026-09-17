@@ -84,6 +84,18 @@ export const MemoryPlugin: Plugin = async ({ directory, worktree, client }, opti
       }
     },
 
+    "experimental.session.compacting": async (_input, output) => {
+      const blocks = await store.listBlocks("all");
+      if (blocks.length === 0) return;
+
+      const labels = blocks.map((b) => `${b.scope}:${b.label}`).join(", ");
+      output.context.push(
+        `The agent has persistent memory blocks (${labels}) that are injected into every system prompt. ` +
+        "Information already stored in these blocks does not need to be repeated in the compacted summary. " +
+        "Focus the summary on conversation context, decisions, and progress not captured in memory blocks.",
+      );
+    },
+
     tool: {
       memory_list: MemoryList(store, { disableGlobal }),
       memory_set: MemorySet(store, { disableGlobal }),
