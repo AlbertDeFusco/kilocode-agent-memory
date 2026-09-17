@@ -34,7 +34,23 @@ export type AgentMemoryConfig = z.infer<typeof ConfigSchema>;
 export async function loadConfig(
   configDir?: string,
   warn?: (message: string) => void,
+  pluginOptions?: Record<string, unknown>,
 ): Promise<AgentMemoryConfig> {
+  // If inline plugin options are provided in kilo.json, use them directly.
+  // This lets users configure everything in kilo.json without a separate file:
+  //   "plugin": [["kilocode-agent-memory", { "journal": { "enabled": true } }]]
+  if (pluginOptions && Object.keys(pluginOptions).length > 0) {
+    const parsed = ConfigSchema.safeParse(pluginOptions);
+    if (!parsed.success) {
+      throw new Error(
+        `Invalid plugin options for kilocode-agent-memory: ${parsed.error.message}`,
+        { cause: parsed.error },
+      );
+    }
+    return parsed.data;
+  }
+
+  // Fall back to ~/.config/kilo/agent-memory.json file config.
   const dir = configDir ?? path.join(os.homedir(), ".config", "kilo");
   const configPath = path.join(dir, "agent-memory.json");
   let config: unknown;
@@ -69,6 +85,7 @@ const EntryFrontmatterSchema = z.looseObject({
   project: z.string().optional(),
   model: z.string().optional(),
   provider: z.string().optional(),
+  variant: z.string().optional(),
   agent: z.string().optional(),
   session_id: z.string().optional(),
   created: z.string().optional(),
@@ -81,6 +98,7 @@ export type JournalEntry = {
   project: string;
   model: string;
   provider: string;
+  variant: string;
   agent: string;
   sessionId: string;
   created: Date;
@@ -128,6 +146,7 @@ async function readEntryFile(filePath: string): Promise<JournalEntry> {
     project: fm.project ?? "",
     model: fm.model ?? "",
     provider: fm.provider ?? "",
+    variant: fm.variant ?? "",
     agent: fm.agent ?? "",
     sessionId: fm.session_id ?? "",
     created: fm.created ? new Date(fm.created) : new Date(),
@@ -164,6 +183,7 @@ export type JournalStore = {
     project?: string;
     model?: string;
     provider?: string;
+    variant?: string;
     agent?: string;
     sessionId?: string;
     tags?: string[];
@@ -202,6 +222,7 @@ export function createJournalStore(configDir?: string): JournalStore {
       if (entry.project) frontmatter.project = entry.project;
       if (entry.model) frontmatter.model = entry.model;
       if (entry.provider) frontmatter.provider = entry.provider;
+      if (entry.variant) frontmatter.variant = entry.variant;
       if (entry.agent) frontmatter.agent = entry.agent;
       if (entry.sessionId) frontmatter.session_id = entry.sessionId;
       if (entry.tags && entry.tags.length > 0) frontmatter.tags = entry.tags;
@@ -229,6 +250,7 @@ export function createJournalStore(configDir?: string): JournalStore {
         project: entry.project ?? "",
         model: entry.model ?? "",
         provider: entry.provider ?? "",
+        variant: entry.variant ?? "",
         agent: entry.agent ?? "",
         sessionId: entry.sessionId ?? "",
         created,

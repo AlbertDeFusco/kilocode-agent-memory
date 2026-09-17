@@ -17,25 +17,31 @@ import {
 } from "./tools";
 import type { JournalContext } from "./tools";
 
-export const MemoryPlugin: Plugin = async ({ directory, client }) => {
-  const config = await loadConfig(undefined, (message) => {
-    void client.app.log({
-      body: { service: "agent-memory", level: "warn", message },
-    }).catch(() => {});
-  });
+export const MemoryPlugin: Plugin = async ({ directory, worktree, client }, options) => {
+  const projectRoot = worktree || directory;
+
+  const config = await loadConfig(
+    undefined,
+    (message) => {
+      void client.app.log({
+        body: { service: "agent-memory", level: "warn", message },
+      }).catch(() => {});
+    },
+    options,
+  );
   const disableGlobal = config.memory?.disable_global === true;
 
-  const store = createMemoryStore(directory, { disableGlobal });
+  const store = createMemoryStore(projectRoot, { disableGlobal });
   await store.ensureSeed();
 
-  // Journal: opt-in via ~/.config/kilo/agent-memory.json
   const journalEnabled = config.journal?.enabled === true;
 
-  // Mutable state updated by chat.message hook
   const journalCtx: JournalContext = {
-    directory,
+    directory: projectRoot,
     model: "",
     provider: "",
+    variant: "",
+    sessionID: "",
   };
 
   let journalTools: Record<string, ToolDefinition> = {};
@@ -57,6 +63,12 @@ export const MemoryPlugin: Plugin = async ({ directory, client }) => {
         journalCtx.model = input.model.modelID;
         journalCtx.provider = input.model.providerID;
       }
+      if (input.variant) {
+        journalCtx.variant = input.variant;
+      }
+      if (input.sessionID) {
+        journalCtx.sessionID = input.sessionID;
+      }
     },
 
     "experimental.chat.system.transform": async (_input, output) => {
@@ -64,12 +76,9 @@ export const MemoryPlugin: Plugin = async ({ directory, client }) => {
       const xml = renderMemoryBlocks(blocks, { disableGlobal });
       if (!xml) return;
 
-      // Insert early (right after provider header) for salience.
-      // OpenCode will re-join system chunks to preserve caching.
       const insertAt = output.system.length > 0 ? 1 : 0;
       output.system.splice(insertAt, 0, xml);
 
-      // Append journal instructions at the end (preserves memory block cache)
       if (journalSystemNote) {
         output.system.push(journalSystemNote);
       }

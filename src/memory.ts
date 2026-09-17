@@ -123,9 +123,13 @@ const SEED_BLOCKS: Array<{ scope: MemoryScope; label: string }> = [
   { scope: "project", label: "project" },
 ];
 
+function globalConfigDir(): string {
+  return path.join(os.homedir(), ".config", "kilo");
+}
+
 function scopeDir(projectDirectory: string, scope: MemoryScope): string {
   return scope === "global"
-    ? path.join(os.homedir(), ".config", "kilo", "memory")
+    ? path.join(globalConfigDir(), "memory")
     : path.join(projectDirectory, ".kilo", "memory");
 }
 
