@@ -26,6 +26,10 @@ and this project attempts to adhere to [Semantic Versioning](https://semver.org/
 - Journal entries now capture `variant` (reasoning variant) and `sessionID` from the Kilo plugin API
 - Worktree-aware project memory; uses `PluginInput.worktree` so Agent Manager worktree sessions share project memory with the main repo
 
+### Fixed
+
+- Plugin now works in directories without a git repository; when Kilo reports worktree as `/` or a path without `.git`, falls back to the working directory instead of attempting to create memory blocks at the filesystem root
+
 ### Changed
 
 - Forked from [opencode-agent-memory](https://github.com/joshuadavidthomas/opencode-agent-memory) and adapted for [Kilo](https://kilo.ai)

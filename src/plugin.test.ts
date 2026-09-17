@@ -7,6 +7,93 @@ import * as path from "node:path";
 import { createMemoryStore } from "./memory";
 import { MemoryPlugin } from "./plugin";
 
+describe("isUsableWorktree / project root selection", () => {
+  let home: string;
+  let homedirSpy: { mockRestore(): void };
+
+  beforeEach(async () => {
+    home = await fs.mkdtemp(path.join("/tmp/", "kilo-worktree-"));
+    homedirSpy = spyOn(os, "homedir").mockReturnValue(home);
+    await fs.mkdir(path.join(home, ".config", "kilo"), { recursive: true });
+  });
+
+  afterEach(async () => {
+    homedirSpy.mockRestore();
+    await fs.rm(home, { recursive: true, force: true });
+  });
+
+  test("uses worktree when it contains .git", async () => {
+    const worktreeDir = path.join(home, "repo-worktree");
+    const cwdDir = path.join(home, "cwd");
+    await fs.mkdir(path.join(worktreeDir, ".git"), { recursive: true });
+    await fs.mkdir(cwdDir, { recursive: true });
+
+    const hooks = await MemoryPlugin({ directory: cwdDir, worktree: worktreeDir } as PluginInput);
+    const projectMemoryDir = path.join(worktreeDir, ".kilo", "memory");
+    const stat = await fs.stat(projectMemoryDir).catch(() => null);
+    expect(stat?.isDirectory()).toBe(true);
+  });
+
+  test("falls back to directory when worktree is filesystem root", async () => {
+    const cwdDir = path.join(home, "no-git-project");
+    await fs.mkdir(cwdDir, { recursive: true });
+
+    const hooks = await MemoryPlugin({ directory: cwdDir, worktree: "/" } as PluginInput);
+    const projectMemoryDir = path.join(cwdDir, ".kilo", "memory");
+    const stat = await fs.stat(projectMemoryDir).catch(() => null);
+    expect(stat?.isDirectory()).toBe(true);
+
+    const rootMemoryDir = path.join("/", ".kilo", "memory");
+    const rootStat = await fs.stat(rootMemoryDir).catch(() => null);
+    expect(rootStat).toBeNull();
+  });
+
+  test("falls back to directory when worktree is undefined", async () => {
+    const cwdDir = path.join(home, "undefined-worktree");
+    await fs.mkdir(cwdDir, { recursive: true });
+
+    const hooks = await MemoryPlugin({ directory: cwdDir, worktree: undefined } as PluginInput);
+    const projectMemoryDir = path.join(cwdDir, ".kilo", "memory");
+    const stat = await fs.stat(projectMemoryDir).catch(() => null);
+    expect(stat?.isDirectory()).toBe(true);
+  });
+
+  test("falls back to directory when worktree has no .git", async () => {
+    const worktreeDir = path.join(home, "plain-dir");
+    const cwdDir = path.join(home, "actual-project");
+    await fs.mkdir(worktreeDir, { recursive: true });
+    await fs.mkdir(cwdDir, { recursive: true });
+
+    const hooks = await MemoryPlugin({ directory: cwdDir, worktree: worktreeDir } as PluginInput);
+    const projectMemoryDir = path.join(cwdDir, ".kilo", "memory");
+    const stat = await fs.stat(projectMemoryDir).catch(() => null);
+    expect(stat?.isDirectory()).toBe(true);
+  });
+
+  test("memory tools work in non-git directory", async () => {
+    const cwdDir = path.join(home, "tools-test");
+    await fs.mkdir(cwdDir, { recursive: true });
+
+    const hooks = await MemoryPlugin({ directory: cwdDir, worktree: "/" } as PluginInput);
+    const tools = hooks.tool!;
+
+    const context = {
+      sessionID: "test", messageID: "test", agent: "test",
+      directory: cwdDir, worktree: "/",
+      abort: new AbortController().signal,
+      metadata: () => {}, ask: async () => {},
+    };
+
+    const listed = await tools.memory_list!.execute({}, context) as string;
+    expect(listed).toContain("project:project");
+
+    await tools.memory_set!.execute({ label: "project", value: "test content" }, context);
+    const projectFile = path.join(cwdDir, ".kilo", "memory", "project.md");
+    const content = await fs.readFile(projectFile, "utf-8");
+    expect(content).toContain("test content");
+  });
+});
+
 describe("memory plugin configuration", () => {
   let home: string;
   let directory: string;

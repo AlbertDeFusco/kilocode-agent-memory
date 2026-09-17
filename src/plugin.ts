@@ -1,3 +1,6 @@
+import * as fs from "node:fs";
+import * as path from "node:path";
+
 import type { Plugin, ToolDefinition } from "@kilocode/plugin";
 
 import {
@@ -17,8 +20,17 @@ import {
 } from "./tools";
 import type { JournalContext } from "./tools";
 
+function isUsableWorktree(worktree: string | undefined): worktree is string {
+  if (!worktree) return false;
+  try {
+    return fs.existsSync(path.join(worktree, ".git"));
+  } catch {
+    return false;
+  }
+}
+
 export const MemoryPlugin: Plugin = async ({ directory, worktree, client }, options) => {
-  const projectRoot = worktree || directory;
+  const projectRoot = isUsableWorktree(worktree) ? worktree : directory;
 
   const config = await loadConfig(
     undefined,
