@@ -18,13 +18,19 @@ export function MemoryList(store: MemoryStore, opts?: MemoryToolOptions) {
     args: {
       scope: tool.schema.enum(scopeValues).optional(),
     },
-    async execute(args) {
-      // Default to "all" for list (show everything)
+    async execute(args, toolCtx) {
       const scope = (args.scope ?? "all") as MemoryScope | "all";
       const blocks = await store.listBlocks(scope);
       if (blocks.length === 0) {
         return "No memory blocks found.";
       }
+
+      toolCtx.metadata({
+        title: `${blocks.length} memory block(s)`,
+        metadata: Object.fromEntries(
+          blocks.map((b) => [`${b.scope}:${b.label}`, `${b.value.length}/${b.limit} chars${b.readOnly ? " (read-only)" : ""}`]),
+        ),
+      });
 
       return blocks
         .map(
@@ -51,13 +57,19 @@ export function MemorySet(store: MemoryStore, opts?: MemoryToolOptions) {
       description: tool.schema.string().optional(),
       limit: tool.schema.number().int().positive().optional(),
     },
-    async execute(args) {
-      // Default to "project" for mutations (safer default)
+    async execute(args, toolCtx) {
       const scope = (args.scope ?? "project") as MemoryScope;
       await store.setBlock(scope, args.label, args.value, {
         description: args.description,
         limit: args.limit,
       });
+
+      const effectiveLimit = args.limit ?? 5000;
+      toolCtx.metadata({
+        title: `${scope}:${args.label} (${args.value.length}/${effectiveLimit} chars)`,
+        metadata: { scope, label: args.label, chars: args.value.length, limit: effectiveLimit },
+      });
+
       return `Updated memory block ${scope}:${args.label}.`;
     },
   });
@@ -77,10 +89,16 @@ export function MemoryReplace(store: MemoryStore, opts?: MemoryToolOptions) {
       oldText: tool.schema.string(),
       newText: tool.schema.string(),
     },
-    async execute(args) {
-      // Default to "project" for mutations (safer default)
+    async execute(args, toolCtx) {
       const scope = (args.scope ?? "project") as MemoryScope;
       await store.replaceInBlock(scope, args.label, args.oldText, args.newText);
+
+      const block = await store.getBlock(scope, args.label);
+      toolCtx.metadata({
+        title: `${scope}:${args.label} (${block.value.length}/${block.limit} chars)`,
+        metadata: { scope, label: args.label, chars: block.value.length, limit: block.limit },
+      });
+
       return `Updated memory block ${scope}:${args.label}.`;
     },
   });
@@ -90,6 +108,8 @@ export type JournalContext = {
   directory: string;
   model: string;
   provider: string;
+  variant: string;
+  sessionID: string;
 };
 
 export function JournalWrite(
@@ -120,9 +140,19 @@ export function JournalWrite(
         project: ctx.directory,
         model: ctx.model,
         provider: ctx.provider,
+        variant: ctx.variant,
         agent: toolCtx.agent,
-        sessionId: toolCtx.sessionID,
+        sessionId: ctx.sessionID || toolCtx.sessionID,
         tags,
+      });
+
+      toolCtx.metadata({
+        title: `Journal: ${entry.title}`,
+        metadata: {
+          id: entry.id,
+          created: entry.created.toISOString(),
+          ...(tags && tags.length > 0 ? { tags: tags.join(", ") } : {}),
+        },
       });
 
       return `Journal entry created: ${entry.id}\n  title: ${entry.title}\n  created: ${entry.created.toISOString()}`;
@@ -138,8 +168,18 @@ export function JournalRead(store: JournalStore) {
     args: {
       id: tool.schema.string(),
     },
-    async execute(args) {
+    async execute(args, toolCtx) {
       const entry = await store.read(args.id);
+
+      toolCtx.metadata({
+        title: `Journal: ${entry.title}`,
+        metadata: {
+          id: entry.id,
+          created: entry.created.toISOString(),
+          ...(entry.project ? { project: entry.project } : {}),
+          ...(entry.tags.length > 0 ? { tags: entry.tags.join(", ") } : {}),
+        },
+      });
 
       const meta = [
         `title: ${entry.title}`,
@@ -147,6 +187,7 @@ export function JournalRead(store: JournalStore) {
         entry.project ? `project: ${entry.project}` : null,
         entry.model ? `model: ${entry.model}` : null,
         entry.provider ? `provider: ${entry.provider}` : null,
+        entry.variant ? `variant: ${entry.variant}` : null,
         entry.agent ? `agent: ${entry.agent}` : null,
         entry.sessionId ? `session: ${entry.sessionId}` : null,
         entry.tags.length > 0
@@ -174,7 +215,7 @@ export function JournalSearch(store: JournalStore) {
       limit: tool.schema.number().int().positive().optional(),
       offset: tool.schema.number().int().nonnegative().optional(),
     },
-    async execute(args) {
+    async execute(args, toolCtx) {
       const tags = args.tags
         ? args.tags
             .split(",")
@@ -199,6 +240,15 @@ export function JournalSearch(store: JournalStore) {
       }
 
       const offset = args.offset ?? 0;
+
+      toolCtx.metadata({
+        title: `${result.total} journal entries`,
+        metadata: {
+          showing: `${offset + 1}–${offset + result.entries.length} of ${result.total}`,
+          ...(result.allTags.length > 0 ? { tags: result.allTags.join(", ") } : {}),
+        },
+      });
+
       const header = `Found ${result.total} entries (showing ${offset + 1}–${offset + result.entries.length}):`;
       const tagsLine =
         result.allTags.length > 0
