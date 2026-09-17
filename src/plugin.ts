@@ -1,4 +1,4 @@
-import type { Plugin, ToolDefinition } from "@opencode-ai/plugin";
+import type { Plugin, ToolDefinition } from "@kilocode/plugin";
 
 import {
   buildJournalSystemNote,
@@ -28,7 +28,7 @@ export const MemoryPlugin: Plugin = async ({ directory, client }) => {
   const store = createMemoryStore(directory, { disableGlobal });
   await store.ensureSeed();
 
-  // Journal: opt-in via ~/.config/opencode/agent-memory.json
+  // Journal: opt-in via ~/.config/kilo/agent-memory.json
   const journalEnabled = config.journal?.enabled === true;
 
   // Mutable state updated by chat.message hook

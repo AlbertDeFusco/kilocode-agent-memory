@@ -1,12 +1,12 @@
 {
-  "name": "opencode-agent-memory",
+  "name": "kilocode-agent-memory",
   "version": "0.2.0",
-  "description": "Letta-style editable memory blocks for OpenCode.",
+  "description": "Letta-style editable memory blocks for Kilo.",
   "author": "Josh Thomas <josh@joshthomas.dev>",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/joshuadavidthomas/opencode-agent-memory"
+    "url": "https://github.com/AlbertDeFusco/kilocode-agent-memory"
   },
   "main": "src/plugin.ts",
   "type": "module",
@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "@huggingface/transformers": "^3.8.1",
-    "@opencode-ai/plugin": "^1.0.115",
+    "@kilocode/plugin": "^7.7.3",
     "js-yaml": "^4.1.0",
     "zod": "^4.1.13"
   },
@@ -31,7 +31,6 @@
     "@types/bun": "^1.3.3",
     "@types/js-yaml": "^4.0.9",
     "@types/node": "^24.10.1",
-    "opencode-ai": "^1.18.30",
     "typescript": "^5.9.3"
   },
   "engines": {

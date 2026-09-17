@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, mock, spyOn, test } from "bun:test";
-import { tool, type PluginInput } from "@opencode-ai/plugin";
+import { tool, type PluginInput } from "@kilocode/plugin";
 import * as fs from "node:fs/promises";
 import * as os from "node:os";
 import * as path from "node:path";
@@ -16,14 +16,18 @@ describe("memory plugin configuration", () => {
     sessionID: "test-session",
     messageID: "test-message",
     agent: "test-agent",
+    directory: "/tmp/test-project",
+    worktree: "/tmp/test-project",
     abort: new AbortController().signal,
+    metadata: () => {},
+    ask: async () => {},
   };
 
   beforeEach(async () => {
-    home = await fs.mkdtemp(path.join("/tmp/", "opencode-plugin-"));
+    home = await fs.mkdtemp(path.join("/tmp/", "kilo-plugin-"));
     homedirSpy = spyOn(os, "homedir").mockReturnValue(home);
     directory = path.join(home, "project");
-    configDir = path.join(home, ".config", "opencode");
+    configDir = path.join(home, ".config", "kilo");
     await fs.mkdir(configDir, { recursive: true });
   });
 
@@ -54,7 +58,7 @@ describe("memory plugin configuration", () => {
 
     const hooks = await MemoryPlugin({ directory } as PluginInput);
     const output = { system: ["provider header", "existing instructions"] };
-    await hooks["experimental.chat.system.transform"]!({}, output);
+    await hooks["experimental.chat.system.transform"]!({ model: {} as any }, output);
     expect(output.system[0]).toBe("provider header");
     expect(output.system[2]).toBe("existing instructions");
     const prompt = output.system[1]!;
@@ -80,7 +84,7 @@ describe("memory plugin configuration", () => {
       expect(tool.schema.safeParse(scope, undefined).success).toBe(true);
       expect(tool.schema.safeParse(scope, "all").success).toBe(toolName === "memory_list");
     }
-    const listed = await tools.memory_list!.execute({}, context);
+    const listed = await tools.memory_list!.execute({}, context) as string;
     expect(listed).toContain("project:human");
     expect(listed.includes("global:human")).toBe(globalEnabled);
 
@@ -130,6 +134,6 @@ describe("memory plugin configuration", () => {
     );
     await expect(MemoryPlugin({ directory } as PluginInput)).rejects.toThrow("agent-memory.json");
     await expect(fs.access(path.join(configDir, "memory"))).rejects.toThrow();
-    await expect(fs.access(path.join(directory, ".opencode", "memory"))).rejects.toThrow();
+    await expect(fs.access(path.join(directory, ".kilo", "memory"))).rejects.toThrow();
   });
 });

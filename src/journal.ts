@@ -35,7 +35,7 @@ export async function loadConfig(
   configDir?: string,
   warn?: (message: string) => void,
 ): Promise<AgentMemoryConfig> {
-  const dir = configDir ?? path.join(os.homedir(), ".config", "opencode");
+  const dir = configDir ?? path.join(os.homedir(), ".config", "kilo");
   const configPath = path.join(dir, "agent-memory.json");
   let config: unknown;
   try {
@@ -182,7 +182,7 @@ export type JournalStore = {
 
 export function createJournalStore(configDir?: string): JournalStore {
   const journalDir = path.join(
-    configDir ?? path.join(os.homedir(), ".config", "opencode"),
+    configDir ?? path.join(os.homedir(), ".config", "kilo"),
     "journal",
   );
 

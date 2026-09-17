@@ -6,7 +6,7 @@ import * as path from "node:path";
 import { createMemoryStore } from "./memory";
 
 async function mkTmpDir(): Promise<string> {
-  const root = await fs.mkdtemp(path.join("/tmp/", "opencode-memory-"));
+  const root = await fs.mkdtemp(path.join("/tmp/", "kilo-memory-"));
   return root;
 }
 
@@ -48,9 +48,9 @@ describe("store", () => {
 
     expect((await store.listBlocks("all")).map((b) => `${b.scope}:${b.label}`))
       .toEqual(["project:project"]);
-    await expect(fs.access(path.join(home, ".config", "opencode", "memory")))
+    await expect(fs.access(path.join(home, ".config", "kilo", "memory")))
       .rejects.toThrow();
-    expect(await fs.readFile(path.join(dir, ".opencode", "memory", ".gitignore"), "utf-8"))
+    expect(await fs.readFile(path.join(dir, ".kilo", "memory", ".gitignore"), "utf-8"))
       .toBe("*\n");
   });
 

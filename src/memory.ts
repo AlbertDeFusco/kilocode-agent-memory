@@ -125,8 +125,8 @@ const SEED_BLOCKS: Array<{ scope: MemoryScope; label: string }> = [
 
 function scopeDir(projectDirectory: string, scope: MemoryScope): string {
   return scope === "global"
-    ? path.join(os.homedir(), ".config", "opencode", "memory")
-    : path.join(projectDirectory, ".opencode", "memory");
+    ? path.join(os.homedir(), ".config", "kilo", "memory")
+    : path.join(projectDirectory, ".kilo", "memory");
 }
 
 async function exists(filePath: string): Promise<boolean> {
@@ -139,7 +139,7 @@ async function exists(filePath: string): Promise<boolean> {
 }
 
 async function ensureGitignore(projectDirectory: string): Promise<void> {
-  const memoryDir = path.join(projectDirectory, ".opencode", "memory");
+  const memoryDir = path.join(projectDirectory, ".kilo", "memory");
   const gitignorePath = path.join(memoryDir, ".gitignore");
 
   await fs.mkdir(memoryDir, { recursive: true });

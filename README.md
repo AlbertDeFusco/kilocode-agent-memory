@@ -1,12 +1,12 @@
-# opencode-agent-memory
+# kilocode-agent-memory
 
-[Letta](https://letta.com)-style editable [memory blocks](https://docs.letta.com/guides/agents/memory-blocks/) for [OpenCode](https://opencode.ai).
+[Letta](https://letta.com)-style editable [memory blocks](https://docs.letta.com/guides/agents/memory-blocks/) for [Kilo](https://kilo.ai).
 
 ## Experimental
 
-This plugin is experimental. The core idea - giving the agent persistent, self-editable memory blocks - is adapted from [Letta](https://github.com/letta-ai/letta). Specifially, the plugin follows Letta's [shared memory blocks](https://docs.letta.com/tutorials/shared-memory-blocks) pattern - the markdown files on disk are shared state that every OpenCode session can read and write.
+This plugin is experimental. The core idea - giving the agent persistent, self-editable memory blocks - is adapted from [Letta](https://github.com/letta-ai/letta). Specifically, the plugin follows Letta's [shared memory blocks](https://docs.letta.com/tutorials/shared-memory-blocks) pattern - the markdown files on disk are shared state that every Kilo session can read and write.
 
-Think of it as AGENTS.md with a harness. OpenCode supports [rules](https://opencode.ai/docs/rules/) via `AGENTS.md` and custom instruction files - this plugin is similar in spirit, but adds structure (scoped blocks with metadata and size limits), dedicated tools for memory operations, and prompting that encourages the agent to actively maintain its own memory. The content is similar; the scaffolding around it is what's different.
+Think of it as AGENTS.md with a harness. Kilo supports custom instruction files via `AGENTS.md` - this plugin is similar in spirit, but adds structure (scoped blocks with metadata and size limits), dedicated tools for memory operations, and prompting that encourages the agent to actively maintain its own memory. The content is similar; the scaffolding around it is what's different.
 
 For background on the memory concept, see Letta's docs on [memory](https://docs.letta.com/guides/agents/memory/) and [memory blocks](https://docs.letta.com/guides/agents/memory-blocks/).
 
@@ -20,38 +20,38 @@ For background on the memory concept, see Letta's docs on [memory](https://docs.
 
 ## Requirements
 
-- [OpenCode](https://opencode.ai/) v1.0.115 or later
+- [Kilo](https://kilo.ai/) v7.7.3 or later
 
 ## Installation
 
-Add to your OpenCode config (`~/.config/opencode/opencode.json`):
+Add to your Kilo config (`~/.config/kilo/kilo.json`):
 
 ```json
 {
-  "plugin": ["opencode-agent-memory"]
+  "plugin": ["kilocode-agent-memory"]
 }
 ```
 
-Restart OpenCode and you're ready to go.
+Restart Kilo and you're ready to go.
 
 Optionally, pin to a specific version for stability:
 
 ```json
 {
-  "plugin": ["opencode-agent-memory@0.2.0"]
+  "plugin": ["kilocode-agent-memory@0.2.0"]
 }
 ```
 
-OpenCode fetches unpinned plugins from npm on each startup; pinned versions are cached and require a manual version bump to update.
+Kilo fetches unpinned plugins from npm on each startup; pinned versions are cached and require a manual version bump to update.
 
 ### Local Development
 
 If you want to customize or contribute:
 
 ```bash
-git clone https://github.com/joshuadavidthomas/opencode-agent-memory ~/.config/opencode/opencode-agent-memory
-mkdir -p ~/.config/opencode/plugin
-ln -sf ~/.config/opencode/opencode-agent-memory/src/plugin.ts ~/.config/opencode/plugin/memory.ts
+git clone https://github.com/AlbertDeFusco/kilocode-agent-memory ~/.config/kilo/kilocode-agent-memory
+mkdir -p ~/.config/kilo/plugin
+ln -sf ~/.config/kilo/kilocode-agent-memory/src/plugin.ts ~/.config/kilo/plugin/memory.ts
 ```
 
 ## Usage
@@ -78,7 +78,7 @@ When the journal is enabled, the agent gets 3 additional tools:
 | `journal_search` | Search entries semantically, filter by project or tags, with pagination |
 | `journal_read` | Read a specific journal entry by ID |
 
-Journal entries are append-only markdown files with YAML frontmatter, stored in `~/.config/opencode/journal/`. Each entry records which project, model, provider, agent, and session it was written from. Semantic search uses local embeddings ([all-MiniLM-L6-v2](https://huggingface.co/Xenova/all-MiniLM-L6-v2)) - no data leaves your machine.
+Journal entries are append-only markdown files with YAML frontmatter, stored in `~/.config/kilo/journal/`. Each entry records which project, model, provider, agent, and session it was written from. Semantic search uses local embeddings ([all-MiniLM-L6-v2](https://huggingface.co/Xenova/all-MiniLM-L6-v2)) - no data leaves your machine.
 
 ### Default Blocks
 
@@ -94,12 +94,12 @@ These are just starting points. Create whatever blocks make sense for your workf
 
 ### Memory Locations
 
-- **Global blocks**: `~/.config/opencode/memory/*.md`
-- **Project blocks**: `.opencode/memory/*.md` (auto-gitignored)
+- **Global blocks**: `~/.config/kilo/memory/*.md`
+- **Project blocks**: `.kilo/memory/*.md` (auto-gitignored)
 
 ### Project-only Memory
 
-To disable global memory blocks, set `memory.disable_global` in `~/.config/opencode/agent-memory.json`:
+To disable global memory blocks, set `memory.disable_global` in `~/.config/kilo/agent-memory.json`:
 
 ```json
 {
@@ -109,13 +109,13 @@ To disable global memory blocks, set `memory.disable_global` in `~/.config/openc
 }
 ```
 
-Restart OpenCode after changing this setting. It applies to all projects using this config file. The default is `false`; omitting the setting keeps global memory enabled.
+Restart Kilo after changing this setting. It applies to all projects using this config file. The default is `false`; omitting the setting keeps global memory enabled.
 
 When enabled, only the `project` block is seeded, and memory tools and system instructions use project scope only. Global blocks are not read, listed, or modified. Existing global files stay on disk untouched; set the option to `false` or remove it and restart to use them again. No migration is needed.
 
 This setting only affects memory blocks. The optional journal remains shared across projects and is controlled separately by `journal.enabled`.
 
-A missing config file uses the defaults. For backward compatibility, unreadable files, malformed JSON, and non-object configuration also use defaults, with global memory enabled. OpenCode logs a warning on these failures. A malformed file cannot enforce the opt-out, even if it contains `disable_global: true`.
+A missing config file uses the defaults. For backward compatibility, unreadable files, malformed JSON, and non-object configuration also use defaults, with global memory enabled. Kilo logs a warning on these failures. A malformed file cannot enforce the opt-out, even if it contains `disable_global: true`.
 
 In a valid JSON object, invalid memory settings (such as `"disable_global": "true"` instead of a boolean) stop plugin initialization with a config error. Invalid journal settings disable the journal without discarding valid memory settings.
 
@@ -134,7 +134,7 @@ All fields have defaults for graceful degradation, but `description` is essentia
 
 ### Journal Configuration
 
-The journal is opt-in. Enable it in `~/.config/opencode/agent-memory.json`:
+The journal is opt-in. Enable it in `~/.config/kilo/agent-memory.json`:
 
 ```json
 {
@@ -162,7 +162,7 @@ Tags are free-form strings - the agent can use any tag, not just the suggested o
 
 ## Inspiration
 
-The memory architecture and philosophical framing are adapted from [Letta](https://github.com/letta-ai/letta) (formerly MemGPT), a framework for building LLM agents with editable long-term memory.
+The memory architecture and philosophical framing are adapted from [Letta](https://github.com/letta-ai/letta) (formerly MemGPT), a framework for building LLM agents with editable long-term memory. This plugin was originally forked from [opencode-agent-memory](https://github.com/joshuadavidthomas/opencode-agent-memory) by Josh Thomas.
 
 Also worth exploring: [private-journal-mcp](https://github.com/obra/private-journal-mcp) by Jesse Vincent, which gives Claude a private journaling capability to process feelings and thoughts. His [blog post](https://blog.fsck.com/2025/05/28/dear-diary-the-user-asked-me-if-im-alive/) about it explores similar territory around AI self-reflection and persistent inner experience.
 
@@ -171,24 +171,22 @@ Also worth exploring: [private-journal-mcp](https://github.com/obra/private-jour
 Contributions are welcome! Here's how to set up for development:
 
 ```bash
-git clone https://github.com/joshuadavidthomas/opencode-agent-memory
-cd opencode-agent-memory
+git clone https://github.com/AlbertDeFusco/kilocode-agent-memory
+cd kilocode-agent-memory
 bun install
 ```
 
-Then symlink the plugin to your OpenCode config:
+Then symlink the plugin to your Kilo config:
 
 ```bash
-mkdir -p ~/.config/opencode/plugin
-ln -sf "$(pwd)/src/plugin.ts" ~/.config/opencode/plugin/memory.ts
+mkdir -p ~/.config/kilo/plugin
+ln -sf "$(pwd)/src/plugin.ts" ~/.config/kilo/plugin/memory.ts
 ```
 
 ## License
 
-opencode-agent-memory is licensed under the MIT license. See the [`LICENSE`](LICENSE) file for more information.
+kilocode-agent-memory is licensed under the MIT license. See the [`LICENSE`](LICENSE) file for more information.
 
 ---
 
-opencode-agent-memory is not built by, or affiliated with, the OpenCode team.
-
-OpenCode is ©2025 Anomaly.
+kilocode-agent-memory is a fork of [opencode-agent-memory](https://github.com/joshuadavidthomas/opencode-agent-memory), adapted for [Kilo](https://kilo.ai). It is not built by, or affiliated with, the Kilo team.

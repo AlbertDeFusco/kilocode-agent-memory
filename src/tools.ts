@@ -1,4 +1,4 @@
-import { tool } from "@opencode-ai/plugin";
+import { tool } from "@kilocode/plugin";
 
 import type { JournalStore } from "./journal";
 import type { MemoryScope, MemoryStore } from "./memory";

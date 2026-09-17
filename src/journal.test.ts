@@ -31,7 +31,7 @@ mock.module("./embeddings", () => ({
 }));
 
 async function mkTmpDir(): Promise<string> {
-  return fs.mkdtemp(path.join("/tmp/", "opencode-journal-"));
+  return fs.mkdtemp(path.join("/tmp/", "kilo-journal-"));
 }
 
 describe("loadConfig", () => {
